@@ -1,0 +1,96 @@
+plugins {
+    id 'com.android.library'
+    id 'maven-publish'
+}
+task generateSourcesJar(type: Jar){
+    from android.sourceSets.main.java.srcDirs
+    classifier  'sources'
+}
+android {
+    compileSdk 33
+    buildToolsVersion "30.0.2"
+
+    defaultConfig {
+        minSdk 19
+        targetSdk 33
+        versionCode 100
+        versionName "1.0.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles "consumer-rules.pro"
+    }
+
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    afterEvaluate {
+        publishing {
+			// 当前版本依赖库版本号
+            def versionName = "1.0.0" 
+            publications {
+                // Creates a Maven publication called "release".
+                release(MavenPublication) {
+                    from components.release 
+                    // 可以跟sdk工程的包名一样
+                    groupId = 'com.toponpaydcb.sdk'
+					//可以用git上的项目名
+                    artifactId = 'ToponPayment_dcb'
+                    version = versionName
+                }
+            }
+            repositories {
+                // 下面这部分，不是很清楚加不加，但是最后加上
+                maven {
+                    // change URLs to point to your repos, e.g. http://my.org/repo
+                    def baseUrl = buildDir.getParent()
+                    def releasesRepoUrl = "$baseUrl/repos/releases"
+                    def snapshotsRepoUrl = "$baseUrl/repos/snapshots"
+                    url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+                }
+            }
+        }
+    }
+    lintOptions {
+        abortOnError false
+    }
+}
+
+task clearJar(type: Delete) {
+    delete 'build/libs/sdk.jar'//这行表示如果你已经打过一次包了，再进行打包则把原来的包删掉
+}
+
+task makeJar(type: Copy) {
+    from('build/intermediates/aar_main_jar/release/') //这行表示要打包的文件的路径，根据下面的内容，其实是该路径下的classes.jar
+    into('build/libs/')  //这行表示打包完毕后包的生成路径，也就是生成的包存在哪
+//    include('classes.jar')  //看到这行，如果你对分包有了解的话，你就可以看出来这行它只是将一些类打包了
+//    rename ('classes.jar', 'sdk.jar')
+//    exclude('test/', 'BuildConfig.class', 'R.class')//去掉不需要打包的目录和文件
+//    exclude{it.name.startsWith('R');}//去掉R开头的文件
+}
+
+makeJar.dependsOn(clearJar, build)
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.4.1'
+    implementation 'com.google.android.material:material:1.6.0'
+    testImplementation 'junit:junit:4.+'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.3'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+    implementation 'com.android.support:appcompat-v7:22.1.1'
+    implementation("com.squareup.okhttp3:okhttp:4.10.0")
+
+    implementation 'com.github.lzyzsd:jsbridge:1.0.4'
+    implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.0.0"
+    implementation 'com.readystatesoftware.systembartint:systembartint:1.0.3'
+//    implementation 'com.github.bumptech.glide:glide:4.11.0'
+//    annotationProcessor 'com.github.bumptech.glide:compiler:4.11.0'
+
+}
